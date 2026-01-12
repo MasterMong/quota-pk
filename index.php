@@ -39,7 +39,7 @@ $regulation_url = $_ENV['REGULATION_URL'];
             <img src="helper/media/pklogo.png" data-aos="zoom-in-up" data-aos-delay="100">
             <h1 data-aos="zoom-in-up" data-aos-delay="150">ระบบรับสมัครนักเรียนรอบโควตา</h1>
             <p data-aos="zoom-in-up" data-aos-delay="200">สำหรับนักเรียนชั้นมัธยมศึกษาปีที่ 3 โรงเรียนภูเขียว</p>
-            <p data-aos="zoom-in-up" data-aos-delay="250">ประจำปีการศึกษา 2568 ระหว่างวันที่ 9 - 11 ธันวาคม 2567</p>
+            <p data-aos="zoom-in-up" data-aos-delay="250"><?= $_ENV['ACADEMIC_PERIOD'] ?></p>
             <div data-aos="fade-up" data-aos-duration="1000">
                 <div>
                     <a id="btn-regis" class="btn btn-primary animated-button" role="button" href="./auth.php">
