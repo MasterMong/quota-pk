@@ -175,13 +175,11 @@ $plans = getPlans($conn);
             
             // Check if this plan has questions
             if (planQuestions[planCode] && planQuestions[planCode].length > 0) {
-                // Show modal with questions
+                // Show modal with questions first
                 showQuestionsModal(planCode);
             } else {
-                // No questions, proceed with confirmation
-                if (confirm('คุณแน่ใจหรือไม่ที่จะเลือกแผนการเรียนนี้?\nคุณจะสามารถเลือกได้เพียง 1 ครั้งเท่านั้น')) {
-                    submitPlanChoice(planCode, {});
-                }
+                // No questions, proceed directly to random code confirmation
+                showRandomCodeConfirmation(planCode, {});
             }
         }
         
@@ -236,12 +234,47 @@ $plans = getPlans($conn);
                 return;
             }
             
-            // Close modal and submit
+            // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('questionModal'));
             modal.hide();
             
-            submitPlanChoice(selectedPlanCode, answers);
+            // Show random code confirmation after questions
+            showRandomCodeConfirmation(selectedPlanCode, answers);
         });
+        
+        function showRandomCodeConfirmation(planCode, answers) {
+            const randomCode = Math.floor(100000 + Math.random() * 900000);
+            Swal.fire({
+                title: 'ยืนยันการสมัครเรียน',
+                text: `กรุณาพิมพ์เลข ${randomCode} เพื่อยืนยันการสมัครแผนการเรียน`,
+                input: 'text',
+                inputPlaceholder: `${randomCode}`,
+                showCancelButton: true,
+                confirmButtonColor: '#51e290',
+                cancelButtonColor: '#ff508d',
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: (inputCode) => {
+                    if (!inputCode || isNaN(inputCode) || inputCode != randomCode) {
+                        Swal.showValidationMessage('คุณใส่รหัสยืนยันผิดโปรดลองใหม่อีกครั้ง');
+                        return false;
+                    }
+                    return true;
+                },
+                allowOutsideClick: () => !Swal.isLoading() 
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: "สมัครเรียนเรียบร้อย",
+                        icon: "success",
+                        confirmButtonColor: '#51e290',
+                        confirmButtonText: 'ตกลง'
+                    }).then(() => {
+                        submitPlanChoice(planCode, answers);
+                    });
+                }
+            });
+        }
         
         function submitPlanChoice(planCode, answers) {
             const form = document.createElement('form');
