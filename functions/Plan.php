@@ -134,4 +134,28 @@ function saveQuestionAnswers($conn, $studentId, $answers) {
     }
 }
 
+function getStudentQuestionAnswers($conn, $studentId, $planCode) {
+    try {
+        $sql = '
+            SELECT 
+                pq.id,
+                pq.question,
+                pq.`order`,
+                sqa.answer
+            FROM plan_questions pq
+            LEFT JOIN student_question_answers sqa 
+                ON pq.id = sqa.question_id AND sqa.student_id = :studentId
+            WHERE pq.plan_code = :planCode
+            ORDER BY pq.`order` ASC
+        ';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':studentId', $studentId, PDO::PARAM_INT);
+        $stmt->bindParam(':planCode', $planCode, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        throw $e;
+    }
+}
+
 

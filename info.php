@@ -2,6 +2,7 @@
 session_start();
 require './config/db.php';
 require './functions/Auth.php';
+require './functions/Plan.php';
 
 if (!isset($_SESSION['studentId'])) {
     header("Location: ./auth.php");
@@ -15,6 +16,9 @@ if (!isset($student['plan']) || $student['plan'] === '') {
     header("Location: ./account.php");
     exit();
 }
+
+// Get student's question answers if the plan has questions
+$questionAnswers = getStudentQuestionAnswers($conn, $_SESSION['studentId'], $student['plan']);
 
 ?>
 
@@ -65,6 +69,28 @@ if (!isset($student['plan']) || $student['plan'] === '') {
                         </ul>
                     </div>
                 </div>
+                
+                <?php if (!empty($questionAnswers)) : ?>
+                <div class="mt-4">
+                    <hr>
+                    <h5 class="mb-3">คำตอบของคุณ</h5>
+                    <ul class="list-group">
+                        <?php foreach ($questionAnswers as $index => $qa) : ?>
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="ms-2 me-auto">
+                                        <div class="fw-bold"><?php echo ($index + 1) . '. ' . htmlspecialchars($qa['question']); ?></div>
+                                        <span class="badge <?php echo $qa['answer'] == 1 ? 'bg-success' : 'bg-secondary'; ?>">
+                                            <?php echo $qa['answer'] == 1 ? 'ใช่' : 'ไม่ใช่'; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+                
                 <div>
                     <hr>
                     <p>หากต้องการเปลี่ยนแปลงแผนการเรียนให้นักเรียนส่งแบบฟอร์ม <a href="https://drive.google.com/file/d/17p5Unp99m6RwB53ny6BSSKGPxJb9n6fU/view?usp=sharing" target="_blank">นร.01.1</a> ที่ห้องวิชาการ โรงเรียนภูเขียว</p>
