@@ -79,3 +79,43 @@ INSERT INTO `plans` (`code`, `name`, `min_GPAX`, `min_GPA_MAT`, `min_GPA_SCI`, `
 INSERT INTO `plans` (`code`, `name`, `min_GPAX`, `min_GPA_MAT`, `min_GPA_SCI`, `allow_ungrade`, `allow_not_meet_req`, `allow_behavior_fail`, `img_cover`, `color`, `order`) VALUES ('sci', 'วิทยาศาสตร์ – คณิตศาสตร์', 2.75, 2.5, 2.5, 0, 0, 0, 'sci.gif', 0, 1);
 
 INSERT INTO `system_settings` (`id`, `registration_enabled`, `registration_start_date`, `registration_end_date`) VALUES (1, 1, '2024-12-09 08:00:00', '2024-12-11 16:00:00');
+
+-- Dumping structure for table quota.plan_questions
+CREATE TABLE IF NOT EXISTS `plan_questions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `plan_code` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `question` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `order` int NOT NULL DEFAULT '0',
+  `required` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `plan_code` (`plan_code`),
+  CONSTRAINT `fk_plan_questions_plan` FOREIGN KEY (`plan_code`) REFERENCES `plans` (`code`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Dumping structure for table quota.student_question_answers
+CREATE TABLE IF NOT EXISTS `student_question_answers` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `student_id` int NOT NULL,
+  `question_id` int NOT NULL,
+  `answer` tinyint(1) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `student_id` (`student_id`),
+  KEY `question_id` (`question_id`),
+  CONSTRAINT `fk_student_answers_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_student_answers_question` FOREIGN KEY (`question_id`) REFERENCES `plan_questions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Data exporting was unselected.
+
+-- Insert data for plan questions
+-- Example questions for different plans (you can customize these)
+-- INSERT INTO `plan_questions` (`plan_code`, `question`, `order`, `required`) VALUES ('sci', 'คุณมีความสนใจในการเรียนวิทยาศาสตร์และคณิตศาสตร์หรือไม่?', 1, 1);
+-- INSERT INTO `plan_questions` (`plan_code`, `question`, `order`, `required`) VALUES ('sci', 'คุณพร้อมที่จะเรียนเนื้อหาที่ท้าทายมากขึ้นหรือไม่?', 2, 1);
+-- INSERT INTO `plan_questions` (`plan_code`, `question`, `order`, `required`) VALUES ('eng', 'คุณมีพื้นฐานภาษาอังกฤษที่ดีหรือไม่?', 1, 1);
+-- INSERT INTO `plan_questions` (`plan_code`, `question`, `order`, `required`) VALUES ('mou', 'คุณสนใจทำงานในธุรกิจค้าปลีกหรือไม่?', 1, 1);
+
+-- Active question for sci plan
+INSERT INTO `plan_questions` (`plan_code`, `question`, `order`, `required`) VALUES ('sci', 'คุณสนใจเข้าเรียนห้องวิทยาศาสตร์พลังสิบ (ห้อง 3) หรือไม่', 1, 1);

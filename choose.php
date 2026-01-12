@@ -24,6 +24,16 @@ if (isset($student['plan']) && $student['plan'] !== '') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plan = $_POST['plan'];
+    
+    // Handle question answers if provided
+    if (isset($_POST['questions'])) {
+        $questionAnswers = [];
+        foreach ($_POST['questions'] as $questionId => $answer) {
+            $questionAnswers[$questionId] = ($answer === 'true' || $answer === '1') ? 1 : 0;
+        }
+        saveQuestionAnswers($conn, $_SESSION['studentId'], $questionAnswers);
+    }
+    
     if (PickPlan($conn, $_SESSION['studentId'], $plan)) {
         header('location:./info.php');
         exit();
@@ -122,10 +132,141 @@ $plans = getPlans($conn);
             </form>
         </div>
     </main>
+    
+    <!-- Modal for Yes/No Questions -->
+    <div class="modal fade" id="questionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="questionModalLabel">คำถามเพิ่มเติม</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="questionContent">
+                    <!-- Questions will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="submitAnswers">ยืนยันการเลือกแผนการเรียน</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <?php require 'helper/source/footer.php' ?>
     <?php require 'helper/source/script.php' ?>
     <script>
         AOS.init();
+        
+        let selectedPlanCode = null;
+        let planQuestions = {};
+        
+        // Fetch questions for all plans on page load
+        <?php foreach ($plans as $plan) : ?>
+        <?php 
+            $planQuestions = getPlanQuestions($conn, $plan['code']); 
+            if (!empty($planQuestions)) :
+        ?>
+        planQuestions['<?php echo $plan['code']; ?>'] = <?php echo json_encode($planQuestions); ?>;
+        <?php endif; ?>
+        <?php endforeach; ?>
+        
+        function confirmForm(planCode) {
+            selectedPlanCode = planCode;
+            
+            // Check if this plan has questions
+            if (planQuestions[planCode] && planQuestions[planCode].length > 0) {
+                // Show modal with questions
+                showQuestionsModal(planCode);
+            } else {
+                // No questions, proceed with confirmation
+                if (confirm('คุณแน่ใจหรือไม่ที่จะเลือกแผนการเรียนนี้?\nคุณจะสามารถเลือกได้เพียง 1 ครั้งเท่านั้น')) {
+                    submitPlanChoice(planCode, {});
+                }
+            }
+        }
+        
+        function showQuestionsModal(planCode) {
+            const questions = planQuestions[planCode];
+            let html = '<div class="mb-3"><p class="text-warning">กรุณาตอบคำถามต่อไปนี้ก่อนยืนยันการเลือกแผนการเรียน</p></div>';
+            
+            questions.forEach((question, index) => {
+                html += `
+                    <div class="mb-4 p-3 border rounded">
+                        <p class="fw-bold mb-3">${index + 1}. ${question.question} ${question.required ? '<span class="text-danger">*</span>' : ''}</p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="question_${question.id}" id="question_${question.id}_yes" value="1" ${question.required ? 'required' : ''}>
+                            <label class="form-check-label" for="question_${question.id}_yes">
+                                ใช่
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="question_${question.id}" id="question_${question.id}_no" value="0" ${question.required ? 'required' : ''}>
+                            <label class="form-check-label" for="question_${question.id}_no">
+                                ไม่ใช่
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('questionContent').innerHTML = html;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('questionModal'));
+            modal.show();
+        }
+        
+        document.getElementById('submitAnswers')?.addEventListener('click', function() {
+            const questions = planQuestions[selectedPlanCode];
+            const answers = {};
+            let allAnswered = true;
+            
+            // Collect answers
+            questions.forEach(question => {
+                const selectedAnswer = document.querySelector(`input[name="question_${question.id}"]:checked`);
+                if (selectedAnswer) {
+                    answers[question.id] = selectedAnswer.value;
+                } else if (question.required) {
+                    allAnswered = false;
+                }
+            });
+            
+            if (!allAnswered) {
+                alert('กรุณาตอบคำถามที่จำเป็นทั้งหมด');
+                return;
+            }
+            
+            // Close modal and submit
+            const modal = bootstrap.Modal.getInstance(document.getElementById('questionModal'));
+            modal.hide();
+            
+            submitPlanChoice(selectedPlanCode, answers);
+        });
+        
+        function submitPlanChoice(planCode, answers) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '';
+            
+            // Add plan code
+            const planInput = document.createElement('input');
+            planInput.type = 'hidden';
+            planInput.name = 'plan';
+            planInput.value = planCode;
+            form.appendChild(planInput);
+            
+            // Add answers
+            for (const [questionId, answer] of Object.entries(answers)) {
+                const answerInput = document.createElement('input');
+                answerInput.type = 'hidden';
+                answerInput.name = `questions[${questionId}]`;
+                answerInput.value = answer;
+                form.appendChild(answerInput);
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 
 </body>

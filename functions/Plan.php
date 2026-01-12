@@ -95,3 +95,43 @@ function getPlanStatistics($conn) {
     }
 }
 
+function getPlanQuestions($conn, $planCode) {
+    try {
+        $sql = 'SELECT id, question, `order`, required FROM plan_questions WHERE plan_code = :planCode ORDER BY `order` ASC';
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':planCode', $planCode, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        throw $e;
+    }
+}
+
+function saveQuestionAnswers($conn, $studentId, $answers) {
+    try {
+        // Delete previous answers for this student
+        $deleteSql = 'DELETE FROM student_question_answers WHERE student_id = :studentId';
+        $stmt = $conn->prepare($deleteSql);
+        $stmt->bindParam(':studentId', $studentId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        // Insert new answers
+        if (!empty($answers)) {
+            $insertSql = 'INSERT INTO student_question_answers (student_id, question_id, answer) VALUES (:studentId, :questionId, :answer)';
+            $stmt = $conn->prepare($insertSql);
+            
+            foreach ($answers as $questionId => $answer) {
+                $stmt->bindParam(':studentId', $studentId, PDO::PARAM_INT);
+                $stmt->bindParam(':questionId', $questionId, PDO::PARAM_INT);
+                $stmt->bindParam(':answer', $answer, PDO::PARAM_INT);
+                $stmt->execute();
+            }
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        throw $e;
+    }
+}
+
+
